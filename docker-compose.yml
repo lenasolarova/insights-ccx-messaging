@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  archive-sync-ols:
+    image: quay.io/redhat-services-prod/obsint-processing-tenant/ccx-messaging/ccx-messaging:latest
+    environment:
+      - CLOWDER_ENABLED=${CLOWDER_ENABLED}
+#      - SENTRY_DSN=
+      - SENTRY_ENVIRONMENT=${ENV_NAME}
+      - SENTRY_ENABLED=${SENTRY_ENABLED}
+      - LOGGING_TO_CW_ENABLED=${LOGGING_TO_CW_ENABLED}
+      - CW_STREAM_NAME=${CW_LOG_STREAM}
+#      - AWS_REGION_NAME=
+#      - CW_LOG_GROUP=
+#      - CW_AWS_ACCESS_KEY_ID=
+#      - CW_AWS_SECRET_ACCESS_KEY=
+      - PYTHONUNBUFFERED=1
+
+    depends_on:
+      - redpanda
+    command:
+      
+
+  redpanda:
+    image: redpandadata/redpanda:v23.2.2
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --check=false
+    ports:
+      - "29092:29092"
