@@ -1,0 +1,73 @@
+plugins:
+  packages:
+    - ccx_messaging
+service:
+  extract_timeout: 300
+  extract_tmp_dir: /tmp/archives
+  format: insights.formats._json.JsonFormat
+  target_components: []
+
+  consumer:
+    name: ccx_messaging.consumers.decoded_ingress_consumer.DecodedIngressConsumer
+    kwargs:
+      incoming_topic: ols-new-archive
+      group.id: archive_sync_ols_app
+      bootstrap.servers: kafka:9092
+      processing_timeout_s: 0
+      max.poll.interval.ms: 600000
+      heartbeat.interval.ms: 10000
+      session.timeout.ms: 20000
+
+  downloader:
+    name: ccx_messaging.downloaders.http_downloader.HTTPDownloader
+    kwargs:
+      allow_unsafe_links: true
+      
+  engine:
+    name: ccx_messaging.engines.s3_upload_engine.S3UploadEngine
+    kwargs:
+      endpoint: http://minio:9000
+      access_key: minio
+      secret_key: minio123
+      dest_bucket: internal-storage-ols
+      archives_path_prefix: ""
+
+  publisher:
+    name: insights_messaging.publishers.Publisher
+
+  watchers:
+    - name: ccx_messaging.watchers.stats_watcher.StatsWatcher
+      kwargs:
+        prometheus_port: 8000
+    - name: ccx_messaging.watchers.payload_tracker_watcher.PayloadTrackerWatcher
+      kwargs:
+        bootstrap.servers: kafka:9092
+        topic: platform.payload-status
+        service_name: archive-sync-ols
+        
+  logging:
+    version: 1
+    disable_existing_loggers: false
+    handlers:
+      default:
+        level: DEBUG
+        class: logging.StreamHandler
+        stream: ext://sys.stdout
+        formatter: default
+    formatters:
+      default:
+        format: '%(asctime)s %(name)s %(levelname)-8s %(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+    root:
+      level: DEBUG
+      handlers:
+        - default
+    loggers:
+      ccx_messaging:
+        level: DEBUG
+      insights_messaging:
+        level: DEBUG
+      insights:
+        level: DEBUG
+      kafka:
+        level: DEBUG
