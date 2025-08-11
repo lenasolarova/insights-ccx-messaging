@@ -2,39 +2,37 @@ plugins:
   packages:
     - ccx_messaging
 service:
-  extract_timeout: 300
-  extract_tmp_dir: /tmp/archives
+  extract_timeout:
+  extract_tmp_dir:
   format: insights.formats._json.JsonFormat
   target_components: []
-
   consumer:
-    name: ccx_messaging.consumers.decoded_ingress_consumer.DecodedIngressConsumer
+    name: ccx_messaging.consumers.kafka_consumer.KafkaConsumer
     kwargs:
       incoming_topic: ${KAFKA_INCOMING_TOPIC}
+      platform_service: ${KAFKA_PLATFORM_SERVICE}
       group.id: ${KAFKA_GROUP_ID}
       bootstrap.servers: ${KAFKA_SERVER}
       processing_timeout_s: 0
       max.poll.interval.ms: 600000
       heartbeat.interval.ms: 10000
       session.timeout.ms: 20000
-
   downloader:
     name: ccx_messaging.downloaders.http_downloader.HTTPDownloader
     kwargs:
-      allow_unsafe_links: true
-      
+      allow_unsafe_links: ${ALLOW_UNSAFE_LINKS}
   engine:
-    name: ccx_messaging.engines.s3_upload_engine.S3UploadEngine
+    name: ccx_messaging.engines.multiplexor_engine.MultiplexorEngine
     kwargs:
-      dest_bucket: ${TARGET_S3_BUCKET}
-      access_key: ${EXTERNAL_S3_ACCESS_KEY}
-      secret_key: ${EXTERNAL_S3_SECRET_KEY}
-      endpoint: ${EXTERNAL_S3_URL}
-      archives_path_prefix: archives/compressed
-
+      filters:
+        openshift_lightspeed.json: OLS
   publisher:
-    name: insights_messaging.publishers.Publisher
-
+    name: ccx_messaging.publishers.multiplexor_kafka_publisher.MultiplexorPublisher
+    kwargs:
+      bootstrap.servers: ${KAFKA_SERVER}
+      outgoing_topics:
+        OLS: ${KAFKA_OUTGOING_TOPIC_OLS}
+        DEFAULT: ${KAFKA_OUTGOING_TOPIC_IO}
   watchers:
     - name: ccx_messaging.watchers.stats_watcher.StatsWatcher
       kwargs:
@@ -43,8 +41,7 @@ service:
       kwargs:
         bootstrap.servers: ${KAFKA_SERVER}
         topic: ${PAYLOAD_TRACKER_TOPIC}
-        service_name: archive-sync-ols
-        
+        service_name: multiplexor
   logging:
     version: 1
     disable_existing_loggers: false
