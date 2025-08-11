@@ -1,12 +1,12 @@
 plugins:
   packages:
     - ccx_messaging
+
 service:
-  extract_timeout: 300
-  extract_tmp_dir: /tmp/archives
+  extract_timeout:
+  extract_tmp_dir:
   format: insights.formats._json.JsonFormat
   target_components: []
-
   consumer:
     name: ccx_messaging.consumers.decoded_ingress_consumer.DecodedIngressConsumer
     kwargs:
@@ -17,12 +17,10 @@ service:
       max.poll.interval.ms: 600000
       heartbeat.interval.ms: 10000
       session.timeout.ms: 20000
-
   downloader:
     name: ccx_messaging.downloaders.http_downloader.HTTPDownloader
     kwargs:
-      allow_unsafe_links: true
-      
+      allow_unsafe_links: ${ALLOW_UNSAFE_LINKS}
   engine:
     name: ccx_messaging.engines.s3_upload_engine.S3UploadEngine
     kwargs:
@@ -31,10 +29,11 @@ service:
       secret_key: ${EXTERNAL_S3_SECRET_KEY}
       endpoint: ${EXTERNAL_S3_URL}
       archives_path_prefix: archives/compressed
-
   publisher:
-    name: insights_messaging.publishers.Publisher
-
+    name: ccx_messaging.publishers.synced_archive_publisher.SyncedArchivePublisher
+    kwargs:
+      outgoing_topic: ${KAFKA_OUTGOING_TOPIC}
+      bootstrap.servers: ${KAFKA_SERVER}
   watchers:
     - name: ccx_messaging.watchers.stats_watcher.StatsWatcher
       kwargs:
@@ -43,8 +42,7 @@ service:
       kwargs:
         bootstrap.servers: ${KAFKA_SERVER}
         topic: ${PAYLOAD_TRACKER_TOPIC}
-        service_name: archive-sync-ols
-        
+        service_name: archive-sync
   logging:
     version: 1
     disable_existing_loggers: false

@@ -1,14 +1,14 @@
 plugins:
+  default_component_enabled: true
   packages:
     - ccx_messaging
 service:
-  extract_timeout: 300
-  extract_tmp_dir: /tmp/archives
+  extract_timeout:
+  extract_tmp_dir:
   format: insights.formats._json.JsonFormat
   target_components: []
-
   consumer:
-    name: ccx_messaging.consumers.decoded_ingress_consumer.DecodedIngressConsumer
+    name: ccx_messaging.consumers.rules_results_consumer.RulesResultsConsumer
     kwargs:
       incoming_topic: ${KAFKA_INCOMING_TOPIC}
       group.id: ${KAFKA_GROUP_ID}
@@ -17,24 +17,18 @@ service:
       max.poll.interval.ms: 600000
       heartbeat.interval.ms: 10000
       session.timeout.ms: 20000
-
   downloader:
-    name: ccx_messaging.downloaders.http_downloader.HTTPDownloader
-    kwargs:
-      allow_unsafe_links: true
-      
+    name: insights_messaging.downloaders.localfs.LocalFS
   engine:
     name: ccx_messaging.engines.s3_upload_engine.S3UploadEngine
     kwargs:
       dest_bucket: ${TARGET_S3_BUCKET}
-      access_key: ${EXTERNAL_S3_ACCESS_KEY}
-      secret_key: ${EXTERNAL_S3_SECRET_KEY}
-      endpoint: ${EXTERNAL_S3_URL}
-      archives_path_prefix: archives/compressed
-
+      access_key: ${S3_ACCESS_KEY}
+      secret_key: ${S3_SECRET_KEY}
+      endpoint: ${S3_ENDPOINT}
+      archive_name_pattern: "$report_path"
   publisher:
     name: insights_messaging.publishers.Publisher
-
   watchers:
     - name: ccx_messaging.watchers.stats_watcher.StatsWatcher
       kwargs:
@@ -43,8 +37,7 @@ service:
       kwargs:
         bootstrap.servers: ${KAFKA_SERVER}
         topic: ${PAYLOAD_TRACKER_TOPIC}
-        service_name: archive-sync-ols
-        
+        service_name: rules-uploader
   logging:
     version: 1
     disable_existing_loggers: false
