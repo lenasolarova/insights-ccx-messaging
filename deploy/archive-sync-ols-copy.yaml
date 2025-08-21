@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: archive-sync-ols
+  name: archive-sync-ols-copy
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
-    name: archive-sync-ols
+    name: archive-sync-ols-copy
   spec:
     envName: ${ENV_NAME}
     objectStore:
@@ -37,7 +37,7 @@ objects:
               valueFrom:
                 secretKeyRef:
                   key: dsn
-                  name: archive-sync-ols-dsn
+                  name: archive-sync-ols-copy-dsn
                   optional: true
             - name: SENTRY_ENVIRONMENT
               value: ${ENV_NAME}
@@ -105,11 +105,11 @@ objects:
             timeoutSeconds: 10
           volumeMounts:
             - mountPath: /data
-              name: archive-sync-ols-config
+              name: archive-sync-ols-copy-config
           volumes:
             - configMap:
-                name: archive-sync-ols-config-map
-              name: archive-sync-ols-config
+                name: archive-sync-ols-copy-config-map
+              name: archive-sync-ols-copy-config
           resources:
             requests:
               cpu: ${CPU_REQUEST}
@@ -127,8 +127,8 @@ objects:
   apiVersion: v1
   metadata:
     labels:
-      app: archive-sync-ols
-    name: archive-sync-ols-config-map
+      app: archive-sync-ols-copy
+    name: archive-sync-ols-copy-config-map
   data:
     config.yaml: |-
       plugins:
@@ -169,7 +169,7 @@ objects:
             kwargs:
               bootstrap.servers: ${KAFKA_SERVER}
               topic: ${PAYLOAD_TRACKER_TOPIC}
-              service_name: archive-sync-ols
+              service_name: archive-sync-ols-copy
         logging:
           version: 1
           disable_existing_loggers: false
@@ -205,17 +205,17 @@ objects:
       prometheus.io/port: "8000"
       prometheus.io/scheme: http
       prometheus.io/scrape: "true"
-    name: archive-sync-ols-prometheus-exporter
+    name: archive-sync-ols-copy-prometheus-exporter
     labels:
-      app: archive-sync-ols
+      app: archive-sync-ols-copy
   spec:
     ports:
-      - name: archive-sync-ols-port-metrics
+      - name: archive-sync-ols-copy-port-metrics
         port: 8000
         protocol: TCP
         targetPort: 8000
     selector:
-      app: archive-sync-ols
+      app: archive-sync-ols-copy
 
 parameters:
 - description: Image name
@@ -252,7 +252,7 @@ parameters:
 - name: CLOUDWATCH_DEBUG
   value: "false"
 - name: CW_LOG_STREAM
-  value: "archive-sync-ols"
+  value: "archive-sync-ols-copy"
 - name: ALLOW_UNSAFE_LINKS
   value: ""
 
